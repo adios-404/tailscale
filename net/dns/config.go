@@ -188,19 +188,9 @@ func (c Config) hasHostsWithoutReverseRoutes() bool {
 	return false
 }
 
-// reverseDNSName returns the PTR query name for a valid IP address.
+// reverseDNSName returns ip's PTR query name. ip must be valid.
 func reverseDNSName(ip netip.Addr) dnsname.FQDN {
-	if ip.Is4() {
-		b := ip.As4()
-		return dnsname.FQDN(fmt.Sprintf("%d.%d.%d.%d.in-addr.arpa.", b[3], b[2], b[1], b[0]))
-	}
-	b := ip.As16()
-	const hex = "0123456789abcdef"
-	name := make([]byte, 0, 64+len("ip6.arpa."))
-	for i := len(b) - 1; i >= 0; i-- {
-		name = append(name, hex[b[i]&0xf], '.', hex[b[i]>>4], '.')
-	}
-	return dnsname.FQDN(append(name, "ip6.arpa."...))
+	return dnsname.IPToArpa(ip)
 }
 
 func (c Config) hasDefaultResolvers() bool {

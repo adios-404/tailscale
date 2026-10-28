@@ -5,6 +5,8 @@
 package dnsname
 
 import (
+	"fmt"
+	"net/netip"
 	"strings"
 
 	"tailscale.com/util/vizerror"
@@ -122,6 +124,22 @@ func (f FQDN) Parent() FQDN {
 		return ""
 	}
 	return FQDN(rest)
+}
+
+// IPToArpa returns ip's PTR query name under in-addr.arpa or ip6.arpa.
+// ip must be valid.
+func IPToArpa(ip netip.Addr) FQDN {
+	if ip.Is4() {
+		b := ip.As4()
+		return FQDN(fmt.Sprintf("%d.%d.%d.%d.in-addr.arpa.", b[3], b[2], b[1], b[0]))
+	}
+	b := ip.As16()
+	const hex = "0123456789abcdef"
+	name := make([]byte, 0, 64+len("ip6.arpa."))
+	for i := len(b) - 1; i >= 0; i-- {
+		name = append(name, hex[b[i]&0xf], '.', hex[b[i]>>4], '.')
+	}
+	return FQDN(append(name, "ip6.arpa."...))
 }
 
 // ValidLabel reports whether label is a valid DNS label. All errors are
